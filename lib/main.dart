@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 
+import 'package:share_plus/share_plus.dart';
+
 void main() {
-  runApp(const MaterialApp(
-    home: TelaGasolina(),
+  runApp(MaterialApp(
+    home: const TelaGasolina(),
+    initialRoute: '/inicio',
+    routes: {
+      '/inicio': (context) => const TelaGasolina(),
+      '/resultado': (context) => TelaResultado()
+    },
   ));
 }
+
+class Argumentos {
+  String modelo = '';
+  double distancia = 0.0, potencia = 0.0, gasolina = 0.0;
+  double valorTotal = 0.0;
+  Argumentos(this.modelo, this.distancia, this.potencia, this.gasolina,
+      this.valorTotal);
+} // fim de Argumentos
 
 class TelaGasolina extends StatefulWidget {
   const TelaGasolina({Key? key}) : super(key: key);
@@ -78,10 +93,23 @@ class EstadoGasolina extends State<TelaGasolina> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        // class EstadoGasolina
         onPressed: () {
           if (_form.currentState!.validate()) {
             setState(() {
-              print('AQUI!');
+              double valorTotal = 0.0;
+              if (potencia <= 1.0) {
+                valorTotal = (distancia / 13.0) * gasolina;
+              } else if (potencia > 1.0 && potencia <= 1.4) {
+                valorTotal = (distancia / 11.0) * gasolina;
+              } else if (potencia > 1.4 && potencia <= 1.9) {
+                valorTotal = (distancia / 9.50) * gasolina;
+              } else if (potencia > 1.9) {
+                valorTotal = (distancia / 7.75) * gasolina;
+              }
+              Navigator.pushNamed(context, '/resultado',
+                  arguments: Argumentos(
+                      modelo, distancia, potencia, gasolina, valorTotal));
             });
           }
         },
@@ -90,3 +118,43 @@ class EstadoGasolina extends State<TelaGasolina> {
     );
   }
 } // fim de EstadoGasolina
+
+class TelaResultado extends StatefulWidget {
+  const TelaResultado({Key? key}) : super(key: key);
+
+  @override
+  State<StatefulWidget> createState() {
+    return EstadoResultado();
+  }
+}
+
+class EstadoResultado extends State<TelaResultado> {
+  String resultado = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Argumentos;
+    resultado =
+        '${args.modelo} ${args.potencia} gasta R\$ ${args.valorTotal} para percorrer ${args.distancia} km com gasolina a R\$ ${args.gasolina} por litro';
+    final box = context.findRenderObject() as RenderBox?;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Resultado')),
+      body: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              resultado,
+              style: const TextStyle(fontSize: 32),
+            )
+          ]),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.share),
+        onPressed: () {
+          setState(() {
+            Share.share(resultado, subject: 'AppGas');
+          });
+        },
+      ),
+    );
+  }
+}
